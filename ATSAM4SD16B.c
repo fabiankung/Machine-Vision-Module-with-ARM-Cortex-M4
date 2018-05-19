@@ -2,6 +2,7 @@
  * ATSAM4SD16B.c
  *
  * Created: 2/1/2016 11:05:57 AM
+ * Last modified: 18/5/2018
  *  Author: Fabian Kung
  */ 
 
@@ -27,8 +28,8 @@ int main(void)
 	int ni = 0;
 
 	/* Initialize the SAM system */
-	SystemInit();				// CMSIS initialization.
-	SAM4S_Init();				// Custom initialization.
+	SAM4S_Init();				// Custom initialization, see file "os_SAM4S_APIs.c".  This will overwrites the
+								// initialization done in SystemInit();
 	OSInit();                   // Custom initialization: Initialize the RTOS.
 	gnTaskCount = 0; 			// Initialize task counter.
 
@@ -42,14 +43,11 @@ int main(void)
 	// Initialize user processes.
 	OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_TCM8230_Driver);		// CMOS camera driver.
 	OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_MessageLoop_StreamImage);	// User task 1, stream image to external display.
-	OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_Camera_LED_Driver);	// Head/camera LED driver.
-	//OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_EyeLED_Effect);		
-	
+	OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_Camera_LED_Driver);	// Head/camera LED driver.		
 	
 	OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_Image1);				// User task 3, process image captured.
 	OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_Image2);				// User task 4, process image captured.
-	//OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_Image3);				// User task 5, process image captured.
-	//OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_Image4);				// User task 6, process image captured.
+	OSCreateTask(&gstrcTaskContext[gnTaskCount], Proce_Image3);				// User task 5, process image captured.
 
 	while (1)
 	{
