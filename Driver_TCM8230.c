@@ -3,9 +3,10 @@
 //
 // File				: Drivers_TCM8230.c
 // Author(s)		: Fabian Kung
-// Last modified	: 9 Feb 2018
+// Last modified	: 11 June 2018
 // Tool-suites		: Atmel Studio 7.0 or later
 //                    GCC C-Compiler
+//				      ARM CMSIS 4.0
 //////////////////////////////////////////////////////////////////////////////////////////////
 #include "osmain.h"
 #include "Driver_I2C_V100.h"
@@ -85,9 +86,9 @@ inline int Max(int a, int b) {return (a > b)? a: b;}
 ///
 /// Author				: Fabian Kung
 ///
-/// Last modified		: 9 Feb 2018
+/// Last modified		: 11 June 2018
 ///
-/// Code Version		: 1.04
+/// Code Version		: 1.05
 ///
 /// Processor			: ARM Cortex-M4 family
 ///
@@ -182,7 +183,7 @@ void Proce_TCM8230_Driver(TASK_ATTRIBUTE *ptrTask)
 					// 5) Finally start sending I2C commands.
 					// The requirements are camera dependent.  In our driver we just approximate conditions (1) and (2), as the camera VCC 
 					// bus is linked to the micro-controller VCC, so essentially we power up the camera then only held the reset pin low.
-					// Thus for from my observation the camera successfully initialized 90% of the time, so I will leave it at that.  In 
+					// Thus far from my observation the camera successfully initialized 90% of the time, so I will leave it at that.  In 
 					// future version of the hardware to take this into consideration.
 				
 				// ----------------------------------------------------------------------------------------------------------------------------------	
@@ -210,10 +211,12 @@ void Proce_TCM8230_Driver(TASK_ATTRIBUTE *ptrTask)
 				// Peripheral DMA Controller for PIOA.
 				// Initialize PDC PIOA receive operation.
 				PDC_PIOA->PERIPH_RPR = gn16Pixel;				// Set receive buffer start address.
-				PDC_PIOA->PERIPH_RCR = gnImageWidth;			// Set receive buffer length.				
-				PDC_PIOA->PERIPH_RNPR = PDC_PIOA->PERIPH_RPR;	// Set next receive buffer start address.
-				PDC_PIOA->PERIPH_RNCR = 0;						// Set next receive buffer length. 
-				PDC_PIOA->PERIPH_PTCR = PDC_PIOA->PERIPH_PTCR | PERIPH_PTCR_RXTEN;	// Enable receiver transfer.
+				PDC_PIOA->PERIPH_RCR = gnImageWidth;			// Set receive buffer length.			
+				PDC_PIOA->PERIPH_RNPR = 0;						// Set next receive buffer start address.
+				PDC_PIOA->PERIPH_RNCR = 0;						// Set next receive buffer length.  A value of 0
+																// stops the DMA upon completion of current transfer. So
+																// whatever we put in PERIPH_RNPR is not important.
+				//PDC_PIOA->PERIPH_PTCR = PDC_PIOA->PERIPH_PTCR | PERIPH_PTCR_RXTEN;	// Enable receiver transfer.
 							
 				// Enable parallel Capture mode of PIOA.
 				// Note: 26 Nov 2015, the following sequence needs to be followed (from datasheet), setting of PCEN flag
@@ -360,8 +363,12 @@ void Proce_TCM8230_Driver(TASK_ATTRIBUTE *ptrTask)
 					// Initialize PDC PIOA receive operation.		
 					PDC_PIOA->PERIPH_RPR = gn16Pixel;				// Set receive buffer start address.
 					PDC_PIOA->PERIPH_RCR = gnImageWidth;			// Set receive buffer length.
-					PDC_PIOA->PERIPH_RNPR = PDC_PIOA->PERIPH_RPR;	// Set next receive buffer start address.
-					PDC_PIOA->PERIPH_RNCR = 0;						// Set next receive buffer length.
+					//PDC_PIOA->PERIPH_RNPR = &(PDC_PIOA->PERIPH_RPR);
+					PDC_PIOA->PERIPH_RNPR = 0;						// Set next receive buffer start address.
+					PDC_PIOA->PERIPH_RNCR = 0;						// Set next receive buffer length. A value of 0
+																	// stops the DMA upon completion of current transfer. So
+																	// whatever we put in PERIPH_RNPR is not important.
+					PDC_PIOA->PERIPH_PTCR = PDC_PIOA->PERIPH_PTCR | PERIPH_PTCR_RXTEN; // Enable receiver transfer using DMA.
 					
 					nLineCounter = 0;								// Reset line counter.
 					for (nTemp = 0; nTemp < 128; nTemp++)			// Clear the luminance histogram array
@@ -384,12 +391,13 @@ void Proce_TCM8230_Driver(TASK_ATTRIBUTE *ptrTask)
 				{
 																	// Pixel line buffer is full.
 					nLineCounter++;									// Increment row counter.
-					// Initialize PDC PIOA receive operation.
+					// Re-initialize PDC PIOA receive operation.
 					PDC_PIOA->PERIPH_RPR = gn16Pixel;				// Set receive buffer start address.
 					PDC_PIOA->PERIPH_RCR = gnImageWidth;			// Set receive buffer length.
-					PDC_PIOA->PERIPH_RNPR = gn16Pixel;				// Set next receive buffer start address.
-					PDC_PIOA->PERIPH_RNCR = 0;						// Set next receive buffer length.		
-					
+					PDC_PIOA->PERIPH_RNPR = 0;						// Set next receive buffer start address.
+					PDC_PIOA->PERIPH_RNCR = 0;						// Set next receive buffer length.  A value of 0 
+																	// stops the DMA upon completion of current transfer. So 
+																	// whatever we put in PERIPH_RNPR is not important.	
 					
 					// --- Pre-processing image data here ---
 					// Extract intensity.
